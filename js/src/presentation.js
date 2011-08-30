@@ -19,6 +19,7 @@ var presentation = (function () {
 		myOutline,
 		previousButton,
 		nextButton,
+		tocLink,
 		fadeElement = function (elem, direction, target, callback) {
 			var flag = (direction === "In") ? 1 : -1,
 				targetAlpha = target || ((direction === "In") ? 100 : 0),
@@ -45,19 +46,23 @@ var presentation = (function () {
 			
 			direction = (currentSlide <= totalSlides - 1) ? "In" : "Out";
 			fadeElement(nextButton, direction);
+			
+			window.console.log("Current Slide: " + currentSlide + "\nTotal Slides: " + totalSlides);
+			previousButton.href = (currentSlide > 0) ? myOutline[currentSlide - 1].title.toHash() : '#';
+			nextButton.href = (currentSlide < (totalSlides - 1)) ? myOutline[currentSlide + 1].title.toHash() : '#';
 		},
 		// Sets the title of the slide 
 		setTitle = function () {
-			var slideTitle = document.getElementById('slideTitle'),
-				title = slideTitle.innerHTML.length > 0 ? slideTitle.innerHTML : '';
-
-			if (!!title) {
-				// $('#slide .title h1').hide();
-				fadeElement(slideTitle, "Out");
-			} else {
-				// $('#slide .title h1').show().html(title);
-				fadeElement(slideTitle, "In");
-			}
+			// var slideTitle = document.getElementById('slideTitle'),
+			// 	title = slideTitle.innerHTML.length > 0 ? slideTitle.innerHTML : '';
+			// 
+			// if (!!title) {
+			// 	// $('#slide .title h1').hide();
+			// 	fadeElement(slideTitle, "Out");
+			// } else {
+			// 	// $('#slide .title h1').show().html(title);
+			// 	fadeElement(slideTitle, "In");
+			// }
 		},
 		setContent = function (html, callback) {
 			var slide = document.getElementById("slide");
@@ -86,9 +91,6 @@ var presentation = (function () {
 			xmlHttpReq.send();
 		},
 		setPageTitle = function (slide) {
-		    document.getElementsByTagName("title")[0].innerHTML = slide.title;
-		},
-		setPageLocationHash = function (slide) {
 			document.location.hash = slide.title.toHash();
 		    document.getElementsByTagName("title")[0].innerHTML = slide.title;
 		},
@@ -97,39 +99,38 @@ var presentation = (function () {
 				link = this,
 				callback = function () {
 					var slide;
-					if (link.hasClass('previous')) {
+					if (hasClass(link, "previous")) {
 						currentSlide -= 1;
 					} else {
 						currentSlide += 1;
 					}
 					slide = myOutline[currentSlide];
-					setPageLocationHash(slide);
 					setPageTitle(slide);
-					setNavLinks();
+					setNavLinks(false);
 					setTitle();
 					return false;
 				};
 
 			fadeElement(slide, "Out");
-			requestContent(link.attr('href'), callback);
+			requestContent(link.href, callback);
 			return false;
 		},
-/*		hasClass = function (selector) {
+		hasClass = function (elem, selector) {
 			var className = " " + selector + " ",
 				rclass = /[\n\t\r]/g,
 				i = 0,
-				l = this.length;
+				l = elem.length;
 			
 			for (i; i < l; i + 1) {
-				if (this[i].nodeType === 1 && (" " + this[i].className + " ").replace(rclass, " ").indexOf(className) > -1) {
+				if (elem[i].nodeType === 1 && (" " + elem[i].className + " ").replace(rclass, " ").indexOf(className) > -1) {
 					return true;
 				}
 			}
 			return false;
-		}, */
+		}, 
 		loadTableOfContents = function () {
 			var slideObject = document.getElementById("slide"),
-				slideTitle = document.getElementById("slideTitle"),
+				slideTitle = document.getElementsByTagName("title")[0],
 				tableOfContents = document.createElement("div"),
 				list,
 				listItem,
@@ -139,6 +140,7 @@ var presentation = (function () {
 				slide;
 
 			tableOfContents.id = "tableOfContents";
+			currentSlide = -1;
 
 			for (i in myOutline) {
 				if (myOutline.hasOwnProperty(i)) {
@@ -151,7 +153,11 @@ var presentation = (function () {
 							list = document.createElement("ol");
 						}
 						section = document.createElement("h2");
-						section.innerHTML = slide.sectionTitle;
+						anchor = document.createElement("a");
+						anchor.className = "outlineLink";
+						anchor.href = slide.title.toHash();
+						anchor.innerHTML = slide.title;
+						section.appendChild(anchor);
 						tableOfContents.appendChild(section);
 					} else {
 						listItem = document.createElement("li");
@@ -170,6 +176,8 @@ var presentation = (function () {
 
 			slideTitle.innerHTML = "Table of Contents";
 			slideObject.appendChild(tableOfContents);
+			
+			setNavLinks(true);
 		},
 		
 		setInitialPage = function () {
@@ -195,12 +203,18 @@ var presentation = (function () {
 			} 
 
 			requestContent(initialSlide.url, function () {
-				setTitle();
+				setPageTitle(initialSlide);
 			});
-			setNavLinks();
+			setNavLinks(false);
 		},
-		init = function (outline, previousId, nextId) {
-			if (typeof outline !== 'object' || typeof previousId !== 'string' || typeof nextId !== 'string') {
+		goToSlide = function () {
+			var link = this;
+			window.console.log("Link href: " + link.href + "\nLink href Hash: " + link.hash);
+			document.location.hash = link.hash;
+			document.location.reload();
+		},
+		init = function (outline, previousId, nextId, toc) {
+			if (typeof outline !== 'object' || typeof previousId !== 'string' || typeof nextId !== 'string' || typeof toc !== 'string') {
 				throw {
 					name: 'TypeError',
 					message: 'Initializing a presentation requires three values: outline, previousId and nextID'
@@ -209,9 +223,12 @@ var presentation = (function () {
 			myOutline = outline;
 			previousButton = document.getElementById(previousId);
 			nextButton = document.getElementById(nextId);
+			tocLink = document.getElementById(toc);
+			totalSlides = myOutline.length;
 
-			previousButton.addEventListener('click', loadContent, false);
-			nextButton.addEventListener('click', loadContent, false);
+			previousButton.addEventListener('click', goToSlide, false);
+			nextButton.addEventListener('click', goToSlide, false);
+			tocLink.addEventListener('click', goToSlide, false);
 
 			setInitialPage();
 			return true;
