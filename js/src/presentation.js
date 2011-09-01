@@ -1,4 +1,16 @@
-(function () {
+/*!
+ * Presentation Framework
+ * Version: 0.1
+ *
+ * Copyright 2011, George Walters II
+ * Licensed under MIT Version 2
+ *
+ * Date: Fri Aug 19 2011 8:58 AM -0500
+ *
+ * Usage:
+ *	presentation.init([{"url":"/path/to/file.html", "title": "Some File", "sectionTitle": true},{"url":"/path/to/another-file.html", "title": "Some Other File"}], "previous", "next");
+ */
+;(function () {
 	"use strict";
 	String.prototype.toHash = function () {
 		return '#' + this.replace(/,|\?/g, '').replace(/\s|\//g, '-').toLowerCase();
