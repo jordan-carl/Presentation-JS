@@ -39,37 +39,31 @@ var presentation = (function () {
 			clearInterval(elem.si);
 			elem.si = setInterval(function () { tween(); }, 20);
 		},
-		setNavLinks = function () {
-			var direction = (currentSlide > 0) ? "In" : "Out";
-			fadeElement(previousButton, direction);
-			
-			direction = (currentSlide <= totalSlides - 1) ? "In" : "Out";
-			fadeElement(nextButton, direction);
-			
-			previousButton.href = (currentSlide > 0) ? myOutline[currentSlide - 1].title.toHash() : '#';
-			nextButton.href = (currentSlide < (totalSlides - 1)) ? myOutline[currentSlide + 1].title.toHash() : '#';
+		goToSlide = function () {
+			var link = this;
+			window.console.log("Link href: " + link.href + "\nLink href Hash: " + link.hash);
+			document.location.hash = link.hash;
+			document.location.reload();
 		},
-		// Sets the title of the slide 
-		setTitle = function () {
-			// var slideTitle = document.getElementById('slideTitle'),
-			// 	title = slideTitle.innerHTML.length > 0 ? slideTitle.innerHTML : '';
-			// 
-			// if (!!title) {
-			// 	// $('#slide .title h1').hide();
-			// 	fadeElement(slideTitle, "Out");
-			// } else {
-			// 	// $('#slide .title h1').show().html(title);
-			// 	fadeElement(slideTitle, "In");
-			// }
+		setNavLinks = function (flag) {
+			if (flag) {
+				var direction = (currentSlide > 0) ? "In" : "Out";
+				fadeElement(previousButton, direction);
+
+				direction = (currentSlide <= totalSlides - 1) ? "In" : "Out";
+				fadeElement(nextButton, direction);
+
+				previousButton.href = (currentSlide > 0) ? myOutline[currentSlide - 1].title.toHash() : '#';
+				nextButton.href = (currentSlide < (totalSlides - 1)) ? myOutline[currentSlide + 1].title.toHash() : '#';
+			}
 		},
 		setContent = function (html, callback) {
 			var slide = document.getElementById("slide");
 			slide.innerHTML = html;
-			fadeElement(slide, "In", 100, function () {
-				if (typeof callback === "function") {
-					callback();
-				}
-			});
+			
+			if (typeof callback === "function") {
+				callback();
+			}
 		},
 		requestContent = function (url, callback) {
 			var xmlHttpReq = false;
@@ -92,98 +86,73 @@ var presentation = (function () {
 			document.location.hash = slide.title.toHash();
 		    document.getElementsByTagName("title")[0].innerHTML = slide.title;
 		},
-		loadContent = function () {
-			var slide = document.getElementById("slide"),
-				link = this,
-				callback = function () {
-					var slide;
-					if (hasClass(link, "previous")) {
-						currentSlide -= 1;
-					} else {
-						currentSlide += 1;
-					}
-					slide = myOutline[currentSlide];
-					setPageTitle(slide);
-					setNavLinks(false);
-					setTitle();
-					return false;
-				};
-
-			fadeElement(slide, "Out");
-			requestContent(link.href, callback);
-			return false;
-		},
-		hasClass = function (elem, selector) {
-			var className = " " + selector + " ",
-				rclass = /[\n\t\r]/g,
-				i = 0,
-				l = elem.length;
-			
-			for (i; i < l; i = i + 1) {
-				if (elem[i].nodeType === 1 && (" " + elem[i].className + " ").replace(rclass, " ").indexOf(className) > -1) {
-					return true;
-				}
-			}
-			return false;
-		},
 		attachEventListener = function (elem) {
 			if (typeof elem === "object" && elem.href !== null) {
 				elem.addEventListener('click', goToSlide, false);
 			}
 		},
+		createListItem = function (item) {
+			var result,
+				anchor = document.createElement("a");
+			anchor.className = "outlineLink";
+			anchor.href = item.title.toHash();
+			anchor.innerHTML = item.title;
+			attachEventListener(anchor);
+			
+			if (item.sectionTitle) {
+				result = document.createElement("h2");
+				result.appendChild(anchor);
+			}
+			
+			return (typeof result === "object") ? result : anchor;
+		},
 		loadTableOfContents = function () {
 			var slideObject = document.getElementById("slide"),
 				slideTitle = document.getElementsByTagName("title")[0],
+				contentDiv = document.createElement("div"),
 				tableOfContents = document.createElement("div"),
+				header = document.createElement("h1"),
+				section = document.createElement("ol"),
+				slide,
 				list,
 				listItem,
-				anchor,
-				i,
-				section,
-				slide;
+				i;
 
 			tableOfContents.id = "tableOfContents";
+			contentDiv.id = "content";
+			contentDiv.className = "content";
 			currentSlide = -1;
+			
+			header.innerHTML = "Table of Contents";
+			
+			contentDiv.appendChild(header);
 
 			for (i in myOutline) {
 				if (myOutline.hasOwnProperty(i)) {
 					slide = myOutline[i];
 					if (slide.sectionTitle) {
 						if (typeof list === "object") {
-							tableOfContents.appendChild(list);
-							list = document.createElement("ol");
-						} else {
-							list = document.createElement("ol");
+							section.appendChild(list);
 						}
-						section = document.createElement("h2");
-						anchor = document.createElement("a");
-						anchor.className = "outlineLink";
-						anchor.href = slide.title.toHash();
-						anchor.innerHTML = slide.title;
-						attachEventListener(anchor);
-
-						section.appendChild(anchor);
-						tableOfContents.appendChild(section);
+						section.appendChild(createListItem(slide));
+						list = document.createElement("ol");
 					} else {
 						listItem = document.createElement("li");
-						anchor = document.createElement("a");
-						anchor.className = "outlineLink";
-						anchor.href = slide.title.toHash();
-						anchor.innerHTML = slide.title;
-						attachEventListener(anchor);
 						
-						listItem.appendChild(anchor);
+						listItem.appendChild(createListItem(slide));
 						list.appendChild(listItem);
 					}
 				}
 			}
 			
-			tableOfContents.appendChild(list);
+			section.appendChild(list);
+			tableOfContents.appendChild(section);
 
 			slideTitle.innerHTML = "Table of Contents";
-			slideObject.appendChild(tableOfContents);
+			contentDiv.appendChild(tableOfContents);
+			slideObject.appendChild(contentDiv);
 			
-			setNavLinks(true);
+			setNavLinks(false);
 		},
 		
 		setPage = function () {
@@ -209,16 +178,12 @@ var presentation = (function () {
 				}
 			} 
 
+			attachEventListener(document.getElementById('tocLink'));
+
 			requestContent(initialSlide.url, function () {
 				setPageTitle(initialSlide);
-				setNavLinks(false);
+				setNavLinks(true);
 			});
-		},
-		goToSlide = function () {
-			var link = this;
-			window.console.log("Link href: " + link.href + "\nLink href Hash: " + link.hash);
-			document.location.hash = link.hash;
-			document.location.reload();
 		},
 		init = function (outline, previousId, nextId, toc) {
 			if (typeof outline !== 'object' || typeof previousId !== 'string' || typeof nextId !== 'string' || typeof toc !== 'string') {
@@ -231,7 +196,7 @@ var presentation = (function () {
 			previousButton = document.getElementById(previousId);
 			nextButton = document.getElementById(nextId);
 			totalSlides = myOutline.length;
-
+			
 			attachEventListener(previousButton);
 			attachEventListener(nextButton);
 			
