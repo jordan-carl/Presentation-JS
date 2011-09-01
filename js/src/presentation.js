@@ -36,7 +36,7 @@ var presentation = (function () {
 				targetAlpha = target || ((direction === "In") ? 100 : 0),
 				alpha = elem.style.opacity ? parseFloat(elem.style.opacity) * 100 : 0,
 				tween = function () {
-					if (alpha === target) {
+					if (alpha === targetAlpha) {
 						clearInterval(elem.si);
 						if (typeof callback === "function") {
 							callback();
@@ -59,11 +59,14 @@ var presentation = (function () {
 		},
 		setNavLinks = function (flag) {
 			if (flag) {
-				var direction = (currentSlide > 0) ? "In" : "Out";
-				fadeElement(previousButton, direction);
-
-				direction = (currentSlide <= totalSlides - 1) ? "In" : "Out";
-				fadeElement(nextButton, direction);
+				if (currentSlide > 0) {
+					previousButton.style.visibility = "visible";
+					fadeElement(previousButton, "In");
+				}
+				if (currentSlide < (totalSlides - 1)) {
+					nextButton.style.visibility = "visible";
+					fadeElement(nextButton, "In");
+				}
 
 				previousButton.href = (currentSlide > 0) ? myOutline[currentSlide - 1].title.toHash() : '#';
 				nextButton.href = (currentSlide < (totalSlides - 1)) ? myOutline[currentSlide + 1].title.toHash() : '#';
@@ -72,7 +75,7 @@ var presentation = (function () {
 		setContent = function (html, callback) {
 			var slide = document.getElementById("slide");
 			slide.innerHTML = html;
-			
+
 			if (typeof callback === "function") {
 				callback();
 			}
@@ -110,12 +113,12 @@ var presentation = (function () {
 			anchor.href = item.title.toHash();
 			anchor.innerHTML = item.title;
 			attachEventListener(anchor);
-			
+
 			if (item.sectionTitle) {
 				result = document.createElement("h2");
 				result.appendChild(anchor);
 			}
-			
+
 			return (typeof result === "object") ? result : anchor;
 		},
 		loadTableOfContents = function () {
@@ -134,9 +137,9 @@ var presentation = (function () {
 			contentDiv.id = "content";
 			contentDiv.className = "content";
 			currentSlide = -1;
-			
+
 			header.innerHTML = "Table of Contents";
-			
+
 			contentDiv.appendChild(header);
 
 			for (i in myOutline) {
@@ -150,23 +153,23 @@ var presentation = (function () {
 						list = document.createElement("ol");
 					} else {
 						listItem = document.createElement("li");
-						
+
 						listItem.appendChild(createListItem(slide));
 						list.appendChild(listItem);
 					}
 				}
 			}
-			
+
 			section.appendChild(list);
 			tableOfContents.appendChild(section);
 
 			slideTitle.innerHTML = "Table of Contents";
 			contentDiv.appendChild(tableOfContents);
 			slideObject.appendChild(contentDiv);
-			
+
 			setNavLinks(false);
 		},
-		
+
 		setPage = function () {
 			var hash = document.location.hash,
 				initialSlide = myOutline[0],
@@ -208,14 +211,14 @@ var presentation = (function () {
 			previousButton = document.getElementById(previousId);
 			nextButton = document.getElementById(nextId);
 			totalSlides = myOutline.length;
-			
+
 			attachEventListener(previousButton);
 			attachEventListener(nextButton);
-			
+
 			setPage();
 			return true;
 		};
-	
+
 	return {
 		init: init
 	};
