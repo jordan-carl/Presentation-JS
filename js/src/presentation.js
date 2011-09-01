@@ -169,7 +169,16 @@ var presentation = (function () {
 
 			setNavLinks(false);
 		},
+		keyPress = function (e) {
+		    if (e.keyCode === 37 && (currentSlide > 0)) {
+				window.console.log("Button Pressed: " + previousButton);
+				goToSlide.apply(previousButton);
+		    } else if (e.keyCode === 39 && (currentSlide < (totalSlides - 1))) {
+				window.console.log("Button Pressed: " + nextButton);
+				goToSlide.apply(nextButton);
+			}
 
+		},
 		setPage = function () {
 			var hash = document.location.hash,
 				initialSlide = myOutline[0],
@@ -194,6 +203,7 @@ var presentation = (function () {
 			} 
 
 			attachEventListener(document.getElementById('tocLink'));
+			document.addEventListener('keydown', keyPress, false);
 
 			requestContent(initialSlide.url, function () {
 				setPageTitle(initialSlide);
