@@ -19,7 +19,6 @@ var presentation = (function () {
 		myOutline,
 		previousButton,
 		nextButton,
-		tocLink,
 		fadeElement = function (elem, direction, target, callback) {
 			var flag = (direction === "In") ? 1 : -1,
 				targetAlpha = target || ((direction === "In") ? 100 : 0),
@@ -47,7 +46,6 @@ var presentation = (function () {
 			direction = (currentSlide <= totalSlides - 1) ? "In" : "Out";
 			fadeElement(nextButton, direction);
 			
-			window.console.log("Current Slide: " + currentSlide + "\nTotal Slides: " + totalSlides);
 			previousButton.href = (currentSlide > 0) ? myOutline[currentSlide - 1].title.toHash() : '#';
 			nextButton.href = (currentSlide < (totalSlides - 1)) ? myOutline[currentSlide + 1].title.toHash() : '#';
 		},
@@ -121,13 +119,18 @@ var presentation = (function () {
 				i = 0,
 				l = elem.length;
 			
-			for (i; i < l; i + 1) {
+			for (i; i < l; i = i + 1) {
 				if (elem[i].nodeType === 1 && (" " + elem[i].className + " ").replace(rclass, " ").indexOf(className) > -1) {
 					return true;
 				}
 			}
 			return false;
-		}, 
+		},
+		attachEventListener = function (elem) {
+			if (typeof elem === "object" && elem.href !== null) {
+				elem.addEventListener('click', goToSlide, false);
+			}
+		},
 		loadTableOfContents = function () {
 			var slideObject = document.getElementById("slide"),
 				slideTitle = document.getElementsByTagName("title")[0],
@@ -157,6 +160,8 @@ var presentation = (function () {
 						anchor.className = "outlineLink";
 						anchor.href = slide.title.toHash();
 						anchor.innerHTML = slide.title;
+						attachEventListener(anchor);
+
 						section.appendChild(anchor);
 						tableOfContents.appendChild(section);
 					} else {
@@ -165,6 +170,7 @@ var presentation = (function () {
 						anchor.className = "outlineLink";
 						anchor.href = slide.title.toHash();
 						anchor.innerHTML = slide.title;
+						attachEventListener(anchor);
 						
 						listItem.appendChild(anchor);
 						list.appendChild(listItem);
@@ -180,10 +186,11 @@ var presentation = (function () {
 			setNavLinks(true);
 		},
 		
-		setInitialPage = function () {
+		setPage = function () {
 			var hash = document.location.hash,
 				initialSlide = myOutline[0],
 				i = 0,
+				l = myOutline.length,
 				slide;
 
 			if (hash) {
@@ -192,7 +199,7 @@ var presentation = (function () {
 					return false;
 				}
 
-				for (i; i < myOutline.length; i + 1) {
+				for (i; i < l; i = i + 1) {
 					slide = myOutline[i];
 					if (slide.title.toHash() === hash) {
 						initialSlide = slide;
@@ -204,8 +211,8 @@ var presentation = (function () {
 
 			requestContent(initialSlide.url, function () {
 				setPageTitle(initialSlide);
+				setNavLinks(false);
 			});
-			setNavLinks(false);
 		},
 		goToSlide = function () {
 			var link = this;
@@ -223,14 +230,12 @@ var presentation = (function () {
 			myOutline = outline;
 			previousButton = document.getElementById(previousId);
 			nextButton = document.getElementById(nextId);
-			tocLink = document.getElementById(toc);
 			totalSlides = myOutline.length;
 
-			previousButton.addEventListener('click', goToSlide, false);
-			nextButton.addEventListener('click', goToSlide, false);
-			tocLink.addEventListener('click', goToSlide, false);
-
-			setInitialPage();
+			attachEventListener(previousButton);
+			attachEventListener(nextButton);
+			
+			setPage();
 			return true;
 		};
 	
