@@ -29,6 +29,7 @@ var presentation = (function () {
 						alpha = value;
 					}
 				};
+			elem.style.visibility = 'visible';
 			clearInterval(elem.si);
 			elem.si = setInterval(function () { tween(); }, 20);
 		},
@@ -41,11 +42,9 @@ var presentation = (function () {
 		setNavLinks = function (flag) {
 			if (flag) {
 				if (currentSlide > 0) {
-					previousButton.style.visibility = "visible";
 					fadeElement(previousButton, "In");
 				}
 				if (currentSlide < (totalSlides - 1)) {
-					nextButton.style.visibility = "visible";
 					fadeElement(nextButton, "In");
 				}
 
