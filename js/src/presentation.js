@@ -1,27 +1,8 @@
-/*!
- * Presentation Framework
- * Version: 0.1
- *
- * Copyright 2011, George Walters II
- * Licensed under MIT Version 2
- *
- * Date: Fri Aug 19 2011 8:58 AM -0500
- *
- * Usage:
- *	presentation.init([{"url":"/path/to/file.html", "title": "Some File", "sectionTitle": true},{"url":"/path/to/another-file.html", "title": "Some Other File"}], "previous", "next");
- */
-;(function () {
+(function () {
 	"use strict";
 	String.prototype.toHash = function () {
 		return '#' + this.replace(/,|\?/g, '').replace(/\s|\//g, '-').toLowerCase();
 	};
-
-	// Fix MS to use addEventListener
-	if (!window.addEventListener) {
-		window.addEventListener = function (type, listener, useCapture) {
-			attachEvent('on' + type, function () { listener(event); });
-		};
-	}
 }());
 
 var presentation = (function () {
@@ -75,7 +56,7 @@ var presentation = (function () {
 		setContent = function (html, callback) {
 			var slide = document.getElementById("slide");
 			slide.innerHTML = html;
-
+			
 			if (typeof callback === "function") {
 				callback();
 			}
@@ -101,9 +82,17 @@ var presentation = (function () {
 			document.location.hash = slide.title.toHash();
 		    document.getElementsByTagName("title")[0].innerHTML = slide.title;
 		},
-		attachEventListener = function (elem) {
-			if (typeof elem === "object" && elem.href !== null) {
-				elem.addEventListener('click', goToSlide, false);
+		attachEventListener = function (elem, type, fn) {
+			if (elem.addEventListener) {
+				elem.addEventListener(type, fn, false);
+				return true;
+			} else if (elem.attachEvent) {
+				elem['e' + type + fn] = fn;
+				elem[type + fn] = function () { elem['e' + type + fn](window.event); };
+				return elem.attachEvent('on' + type, elem[type + fn]);
+			} else {
+				elem['on' + type] = fn;
+				return true;
 			}
 		},
 		createListItem = function (item) {
@@ -112,13 +101,13 @@ var presentation = (function () {
 			anchor.className = "outlineLink";
 			anchor.href = item.title.toHash();
 			anchor.innerHTML = item.title;
-			attachEventListener(anchor);
-
+			attachEventListener(anchor, "click", goToSlide);
+			
 			if (item.sectionTitle) {
 				result = document.createElement("h2");
 				result.appendChild(anchor);
 			}
-
+			
 			return (typeof result === "object") ? result : anchor;
 		},
 		loadTableOfContents = function () {
@@ -137,9 +126,9 @@ var presentation = (function () {
 			contentDiv.id = "content";
 			contentDiv.className = "content";
 			currentSlide = -1;
-
+			
 			header.innerHTML = "Table of Contents";
-
+			
 			contentDiv.appendChild(header);
 
 			for (i in myOutline) {
@@ -153,20 +142,20 @@ var presentation = (function () {
 						list = document.createElement("ol");
 					} else {
 						listItem = document.createElement("li");
-
+						
 						listItem.appendChild(createListItem(slide));
 						list.appendChild(listItem);
 					}
 				}
 			}
-
+			
 			section.appendChild(list);
 			tableOfContents.appendChild(section);
 
 			slideTitle.innerHTML = "Table of Contents";
 			contentDiv.appendChild(tableOfContents);
 			slideObject.appendChild(contentDiv);
-
+			
 			setNavLinks(false);
 		},
 		keyPress = function (e) {
@@ -177,7 +166,6 @@ var presentation = (function () {
 				window.console.log("Button Pressed: " + nextButton);
 				goToSlide.apply(nextButton);
 			}
-
 		},
 		setPage = function () {
 			var hash = document.location.hash,
@@ -202,8 +190,8 @@ var presentation = (function () {
 				}
 			} 
 
-			attachEventListener(document.getElementById('tocLink'));
-			document.addEventListener('keydown', keyPress, false);
+			attachEventListener(document.getElementById('tocLink'), 'click', goToSlide);
+			attachEventListener(document, 'keydown', keyPress);
 
 			requestContent(initialSlide.url, function () {
 				setPageTitle(initialSlide);
@@ -221,14 +209,14 @@ var presentation = (function () {
 			previousButton = document.getElementById(previousId);
 			nextButton = document.getElementById(nextId);
 			totalSlides = myOutline.length;
-
-			attachEventListener(previousButton);
-			attachEventListener(nextButton);
-
+			
+			attachEventListener(previousButton, 'click', goToSlide);
+			attachEventListener(nextButton, 'click', goToSlide);
+			
 			setPage();
 			return true;
 		};
-
+	
 	return {
 		init: init
 	};
